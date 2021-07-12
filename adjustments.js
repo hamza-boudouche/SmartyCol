@@ -1,4 +1,12 @@
-const adjustments = (currentStatus) => {
+const cardExists = (arduinoId) => {
+  return true;
+}
+
+const plantIds = (arduinoId) => {
+  return [11, 12, 13, 14];
+}
+
+const adjustments = (arduinoId, currentStatus) => {
   //compute necessary changes and generate result
   //return fake result for the moment
   const result = {
@@ -20,4 +28,4 @@ const adjustments = (currentStatus) => {
   return result;
 };
 
-module.exports = {adjustments}
+module.exports = { cardExists, plantIds, adjustments }

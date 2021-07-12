@@ -17,9 +17,10 @@ struct Plante {
 
 const char* ssid = "SSID";
 const char* password = "PASSWORD";
-const char* measurementsServerName = "http://localhost:5000/api/arduino";
+const String ipAdress_DomaineName = "192.168.1.1"; //change this with the ip adress or domaine name of server
+const String measurementsServerName = "http://" + ipAdress_DomaineName + ":5000/api/arduino";
 unsigned long arduinoId = 1111;
-const char* plantIdsServerName = "http://localhost:5000/api/arduino/plants/" + arduinoId;
+const String plantIdsServerName = "http://" + ipAdress_DomaineName + ":5000/api/arduino/plants/" + arduinoId;
 Plante plantes[4];
 unsigned long lastTime = 0;
 //15 minutes (900000 milliseconds) between each 2 requests
@@ -39,7 +40,7 @@ void setup() {
   Serial.println("Timer set to 15 minutes, it will take 15 minutes before publishing the first reading.");
 
   // initiate plantsIds (with a GET request)
-  String plantsIdsRaw = httpGETplantIds(plantIdsServerName);
+  String plantsIdsRaw = httpGETplantIds(plantIdsServerName.c_str());
    StaticJsonDocument<1000> plantsJson;
    DeserializationError error = deserializeJson(plantsJson, plantsIdsRaw);
    if (error) {
@@ -58,7 +59,7 @@ void loop() {
   if ((millis() - lastTime) > timerDelay) {
     //Check WiFi connection status
     if(WiFi.status()== WL_CONNECTED){
-      httpPostMeasurments(measurementsServerName);
+      httpPostMeasurments(measurementsServerName.c_str());
     }
     else {
       Serial.println("WiFi Disconnected");
@@ -145,6 +146,25 @@ void httpPostMeasurments(const char* serverName){
 
   //make JSON object for request body
   String body = "{}";
+  DynamicJsonDocument doc(1024);
+  JsonObject obj = doc.createNestedObject();
+  obj["arduinoId"] = 1111;
+  JsonArray  plants = doc.createNestedArray("plants");
+  for(int i = 0; i < 4; i++){
+    JsonObject plant  = doc.createNestedObject();
+    plant["plantID"] = plantes[i].plantId;
+    plant["temperature"] = plantes[i].temperature;
+    plant["moisture"] = plantes[i].moisture;
+    plant["nitrogen"] = plantes[i].nitrogen;
+    plant["phosphorus"] = plantes[i].phosphorus;
+    plant["potassium"] = plantes[i].potassium;
+    plant["oxygen"] = plantes[i].oxygen;
+    plant["carbon"] = plantes[i].carbon;
+    plant["light"] = plantes[i].light;
+    plants.add(plant);
+  }
+  
+  serializeJson(doc, body);
   String response;
   // Send HTTP POST request
   int httpResponseCode = http.POST(body);
@@ -157,29 +177,29 @@ void httpPostMeasurments(const char* serverName){
   else {
     Serial.print("Error code: ");
     Serial.println(httpResponseCode);
-    return "";
+    return ;
   }
   // Free resources
   http.end();
 
   //Store response in array of plants
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<1024> doc1;
   
-  DeserializationError error = deserializeJson(doc, response);
+  DeserializationError error = deserializeJson(doc1, response);
   
   if (error) {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
-    return "";
+    return ;
   }
   
-  bool success = doc["success"];
+  bool success = doc1["success"];
   if(!success){
     Serial.println("something went wrong");
-    return "";
+    return;
   }
   int i = 0;
-  for (JsonObject elem : doc["plants"].as<JsonArray>()) {
+  for (JsonObject elem : doc1["plants"].as<JsonArray>()) {
     plantes[i].temperature = elem["temperature"];
     plantes[i].moisture = elem["moisture"];
     plantes[i].nitrogen = elem["nitrogen"];
