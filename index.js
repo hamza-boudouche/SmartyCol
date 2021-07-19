@@ -9,10 +9,19 @@ app.use(morgan('dev'))
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
+app.get('/api/test', (req, res) => {
+	res.send('hello world');
+})
+
 app.post('/api/arduino/:arduinoId', (req, res) => {
+	console.log('begin')
 	const arduinoId = req.params['arduinoId']
 	const currentStatus = req.body
-	res.status(200).json(adjustments(arduinoId, currentStatus))
+	console.log(`arduinoID = ${arduinoId}`)
+	console.log(`currentStatus = ${currentStatus}`)
+	const output = adjustments(arduinoId, currentStatus)
+	console.log(output)
+	res.status(200).json(output)
 })
 
 app.get('/api/arduino/plants/:arduinoId', (req, res) => {

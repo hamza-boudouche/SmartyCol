@@ -15,16 +15,16 @@ struct Plante {
   int light;
 };
 
-const char* ssid = "SSID";
-const char* password = "PASSWORD";
-const String ipAdress_DomaineName = "192.168.1.1"; //change this with the ip adress or domaine name of server
-const String measurementsServerName = "http://" + ipAdress_DomaineName + ":5000/api/arduino";
+const char* ssid = "Orange-7A78";
+const char* password = "0J8RNB60NNL";
 unsigned long arduinoId = 1111;
+const String ipAdress_DomaineName = "192.168.1.102"; //change this with the ip adress or domaine name of server
+const String measurementsServerName = "http://" + ipAdress_DomaineName + ":5000/api/arduino/" + arduinoId;
 const String plantIdsServerName = "http://" + ipAdress_DomaineName + ":5000/api/arduino/plants/" + arduinoId;
 Plante plantes[4];
 unsigned long lastTime = 0;
 //15 minutes (900000 milliseconds) between each 2 requests
-const unsigned long timerDelay = 900000; 
+const unsigned long timerDelay = 10000; 
 
 void setup() {
   Serial.begin(115200);
@@ -145,7 +145,7 @@ void httpPostMeasurments(const char* serverName){
   plantes[3].light = 0;
 
   //make JSON object for request body
-  String body = "{}";
+  String body = "";
   DynamicJsonDocument doc(1024);
   JsonObject obj = doc.createNestedObject();
   obj["arduinoId"] = 1111;
@@ -165,6 +165,7 @@ void httpPostMeasurments(const char* serverName){
   }
   
   serializeJson(doc, body);
+  Serial.println(body);
   String response;
   // Send HTTP POST request
   int httpResponseCode = http.POST(body);
@@ -172,7 +173,7 @@ void httpPostMeasurments(const char* serverName){
   if (httpResponseCode>0) {
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
-    String response = http.getString();
+    response = http.getString();
   }
   else {
     Serial.print("Error code: ");
@@ -181,6 +182,8 @@ void httpPostMeasurments(const char* serverName){
   }
   // Free resources
   http.end();
+
+  Serial.println(response);
 
   //Store response in array of plants
   StaticJsonDocument<1024> doc1;
