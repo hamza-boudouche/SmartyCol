@@ -1,11 +1,13 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const { cardExists, plantIds, adjustments } = require("./adjustments")
+require('./database/dbUtils')
 
 const app = express()
 const port = process.env.PORT || 5000
 
-app.use(morgan('dev'))
+app.use(morgan('combined'))
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
@@ -17,6 +19,7 @@ app.post('/api/arduino/:arduinoId', (req, res) => {
 	console.log('begin')
 	const arduinoId = req.params['arduinoId']
 	const currentStatus = req.body
+	console.log(currentStatus)
 	console.log(`arduinoID = ${arduinoId}`)
 	console.log(`currentStatus = ${currentStatus}`)
 	const output = adjustments(arduinoId, currentStatus)
@@ -26,11 +29,13 @@ app.post('/api/arduino/:arduinoId', (req, res) => {
 
 app.get('/api/arduino/plants/:arduinoId', (req, res) => {
 	const arduinoId = req.params['arduinoId']
-	if(!cardExists(arduinoId)){
-		res.status(404).json({sucess: false})
+	if (!cardExists(arduinoId)) {
+		res.status(404).json({ sucess: false })
 	}
-	res.status(200).json({sucess: true, plants: plantIds(arduinoId)})
+	res.status(200).json({ sucess: true, plants: plantIds(arduinoId) })
 })
+
+console.log('i am here')
 
 app.listen(port, () => {
 	console.log(`SmartCol server is running on port ${port}`)
