@@ -35,11 +35,10 @@ const getCards = async (filter) => {
 	return cards
 }
 
-const updateCards = async (filter, update) => {
+const updateCards = async (filter, update, upsert = true) => {
 	await connectDB()
 	const res = await Card.updateMany(filter, update, {
-		new: true,
-		upsert: true
+		upsert
 	})
 	await mongoose.disconnect()
 	return res
@@ -76,11 +75,10 @@ const getModules = async (filter) => {
 	return modules
 }
 
-const updateModules = async (filter, update) => {
+const updateModules = async (filter, update, upsert = true) => {
 	await connectDB()
 	const res = await Module.updateMany(filter, update, {
-		new: true,
-		upsert: true
+		upsert
 	})
 	await mongoose.disconnect()
 	return res
@@ -115,11 +113,10 @@ const getParametres = async (filter) => {
 	return params
 }
 
-const updateParametres = async (filter, update) => {
+const updateParametres = async (filter, update, upsert = true) => {
 	await connectDB()
 	const res = await Parametre.updateMany(filter, update, {
-		new: true,
-		upsert: true
+		upsert
 	})
 	await mongoose.disconnect()
 	return res
@@ -152,11 +149,10 @@ const getBlocs = async (filter) => {
 	return blocs
 }
 
-const updateBlocs = async (filter, update) => {
+const updateBlocs = async (filter, update, upsert = true) => {
 	await connectDB()
 	const res = await Bloc.updateMany(filter, update, {
-		new: true,
-		upsert: true
+		upsert
 	})
 	await mongoose.disconnect()
 	return res
@@ -191,11 +187,10 @@ const getPlantes = async (filter) => {
 	return plantes
 }
 
-const updatePlantes = async (filter, update) => {
+const updatePlantes = async (filter, update, upsert = true) => {
 	await connectDB()
 	const res = await Plante.updateMany(filter, update, {
-		new: true,
-		upsert: true
+		upsert
 	})
 	await mongoose.disconnect()
 	return res
@@ -238,11 +233,10 @@ const getTempStorage = async (filter) => {
 	return temp
 }
 
-const updateTempStorage = async (filter, update) => {
+const updateTempStorage = async (filter, update, upsert = true) => {
 	await connectDB()
 	const res = await StockageTemporaire.updateMany(filter, update, {
-		new: true,
-		upsert: true
+		upsert
 	})
 	await mongoose.disconnect()
 	return res
@@ -285,11 +279,10 @@ const getPermStorage = async (filter) => {
 	return perm
 }
 
-const updatePermStorage = async (filter, update) => {
+const updatePermStorage = async (filter, update, upsert = true) => {
 	await connectDB()
 	const res = await StockagePermanent.updateMany(filter, update, {
-		new: true,
-		upsert: true
+		upsert
 	})
 	await mongoose.disconnect()
 	return res
@@ -333,11 +326,10 @@ const getCycleDeVie = async (filter) => {
 	return cycle
 }
 
-const updateCycleDeVie = async (filter, update) => {
+const updateCycleDeVie = async (filter, update, upsert = true) => {
 	await connectDB()
 	const res = await CycleDeVie.updateMany(filter, update, {
-		new: true,
-		upsert: true
+		upsert
 	})
 	await mongoose.disconnect()
 	return res
