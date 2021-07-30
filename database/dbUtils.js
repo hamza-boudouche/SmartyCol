@@ -172,7 +172,7 @@ const planteSchema = new mongoose.Schema({
 	idBloc: Number
 })
 
-const Plante = mongoose.model('Plantes', planteSchema)
+const Plante = mongoose.model('Plante', planteSchema)
 
 const insertPlante = async (newPlante) => {
 	await connectDB()
@@ -186,6 +186,11 @@ const getPlantes = async (filter) => {
 	await mongoose.disconnect()
 	return plantes
 }
+
+// (async () => {
+// 	console.log(await getPlantes())
+// 	console.log('here')
+// })()
 
 const updatePlantes = async (filter, update, upsert = true) => {
 	await connectDB()

@@ -2,7 +2,73 @@ require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const { cardExists, plantIds, adjustments } = require("./adjustments")
-require('./database/dbUtils')
+const {
+	connectDB,
+	cardCRUD: {
+		cardSchema,
+		Card,
+		insertCard,
+		getCards,
+		updateCards,
+		deleteCards
+	},
+	moduleCRUD: {
+		moduleSchema,
+		Module,
+		insertModule,
+		getModules,
+		updateModules,
+		deleteModules
+	},
+	parametresCRUD: {
+		parametresSchema,
+		Parametre,
+		insertParametre,
+		getParametres,
+		updateParametres,
+		deleteParametres
+	},
+	blocCRUD: {
+		blocSchema,
+		Bloc,
+		insertBloc,
+		getBlocs,
+		updateBlocs,
+		deleteBlocs
+	},
+	planteCRUD: {
+		planteSchema,
+		Plante,
+		insertPlante,
+		getPlantes,
+		updatePlantes,
+		deletePlantes,
+	},
+	stockageTemporaireCRUD: {
+		stockageTemporaireSchema,
+		StockageTemporaire,
+		insertTempStorage,
+		getTempStorage,
+		updateTempStorage,
+		deleteTempStorage,
+	},
+	stockagePermanentCRUD: {
+		stockagePermanentSchema,
+		StockagePermanent,
+		insertPermStorage,
+		getPermStorage,
+		updatePermStorage,
+		deletePermStorage,
+	},
+	cycleDeVieCRUD: {
+		cycleDeVieSchema,
+		CycleDeVie,
+		insertCycleDeVie,
+		getCycleDeVie,
+		updateCycleDeVie,
+		deleteCycleDeVie
+	}
+} = require('./database/dbUtils')
 
 const app = express()
 const port = process.env.PORT || 5000
@@ -16,14 +82,17 @@ app.get('/api/test', (req, res) => {
 })
 
 app.post('/api/arduino/:arduinoId', (req, res) => {
-	console.log('begin')
+	console.log(connectDB)
 	const arduinoId = req.params['arduinoId']
-	const currentStatus = req.body
-	console.log(currentStatus)
+	const rawStatus = req.body
+	const [first, ...rest] = rawStatus
+	const currentStatus = {
+		arduinoId: first.arduinoId,
+		plants: rest
+	}
 	console.log(`arduinoID = ${arduinoId}`)
-	console.log(`currentStatus = ${currentStatus}`)
+	console.log(currentStatus)
 	const output = adjustments(arduinoId, currentStatus)
-	console.log(output)
 	res.status(200).json(output)
 })
 
@@ -35,8 +104,6 @@ app.get('/api/arduino/plants/:arduinoId', (req, res) => {
 	res.status(200).json({ sucess: true, plants: plantIds(arduinoId) })
 })
 
-console.log('i am here')
-
 app.listen(port, () => {
-	console.log(`SmartCol server is running on port ${port}`)
+	console.log(`SmartyCol server is running on port ${port}`)
 })

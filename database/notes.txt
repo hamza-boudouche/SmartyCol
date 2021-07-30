@@ -1,0 +1,75 @@
+const newCard = {
+	idCard: 12,
+	type: "test"
+}
+
+
+try{
+	insertCard(newCard)
+}catch(Exception){
+	
+}
+
+
+ - unicité de l'id
+ - mesures doivent etres updated
+
+{
+	idCard: {$gt: 12},
+}
+
+{
+	type: "nouveau type",
+	status: true,
+}
+
+{}
+
+
+[
+  { arduinoId: 1111 },
+  {
+    plantID: 11,
+    temperature: 0,
+    moisture: 0,
+    nitrogen: 0,
+    phosphorus: 0,
+    potassium: 0,
+    oxygen: 0,
+    carbon: 0,
+    light: 0
+  },
+  {
+    plantID: 12,
+    temperature: 0,
+    moisture: 0,
+    nitrogen: 0,
+    phosphorus: 0,
+    potassium: 0,
+    oxygen: 0,
+    carbon: 0,
+    light: 0
+  },
+  {
+    plantID: 13,
+    temperature: 0,
+    moisture: 0,
+    nitrogen: 0,
+    phosphorus: 0,
+    potassium: 0,
+    oxygen: 0,
+    carbon: 0,
+    light: 0
+  },
+  {
+    plantID: 14,
+    temperature: 0,
+    moisture: 0,
+    nitrogen: 0,
+    phosphorus: 0,
+    potassium: 0,
+    oxygen: 0,
+    carbon: 0,
+    light: 0
+  }
+]
