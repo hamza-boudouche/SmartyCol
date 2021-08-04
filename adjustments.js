@@ -1,3 +1,4 @@
+const grubbs = require('grubbs');
 const {
   connectDB,
   cardCRUD: {
@@ -88,13 +89,19 @@ const plantIds = async (arduinoId) => {
   return result
 }
 
-const adjustments = async (arduinoId, currentStatus) => {
-  const card = await getCards({ idCard: arduinoId })
+// add insert in temp storage
+const adjustments = async (currentStatus) => {
+  const card = await getCards({ idCard: currentStatus.arduinoId })
   const { idBloc } = card[0]
   const plantes = await getPlantes({ idBloc })
   const bloc = await getBlocs({ idBloc })
   const { typePlante } = bloc[0]
   const { phases } = await getCycleDeVie({ typePlante })
+
+  await insertTempStorage({
+    idBloc,
+    mesures: currentStatus.plants
+  })
 
   for (let i = 0; i < plantes.length; i++) {
     const age = (new Date()).getTime() - plantes[i].datePlantation.getTime()
@@ -104,7 +111,7 @@ const adjustments = async (arduinoId, currentStatus) => {
       if (phase >= phases.length) {
         return
       }
-      cumul += phases.find(el => el.rang == phase).duree
+      cumule += phases.find(el => el.rang == phase).duree
       phase++
     }
     phase--
@@ -130,56 +137,54 @@ const adjustments = async (arduinoId, currentStatus) => {
     })
   })
 
-  // const result2 = {
-  //   success: true,
-  //   changes: [
-  //     {
-  //       plantID: 11,
-  //       temperature: -4,
-  //       moisture: 8,
-  //       nitrogen: 3,
-  //       phosphorus: 8,
-  //       potassium: 5,
-  //       oxygen: 14,
-  //       carbon: 2,
-  //       light: 0,
-  //     },
-  //     {
-  //       plantID: 12,
-  //       temperature: -4,
-  //       moisture: 8,
-  //       nitrogen: 3,
-  //       phosphorus: 8,
-  //       potassium: 5,
-  //       oxygen: 14,
-  //       carbon: 2,
-  //       light: 0,
-  //     },
-  //     {
-  //       plantID: 13,
-  //       temperature: -4,
-  //       moisture: 8,
-  //       nitrogen: 3,
-  //       phosphorus: 8,
-  //       potassium: 5,
-  //       oxygen: 14,
-  //       carbon: 2,
-  //       light: 0,
-  //     },
-  //     {
-  //       plantID: 14,
-  //       temperature: -4,
-  //       moisture: 8,
-  //       nitrogen: 3,
-  //       phosphorus: 8,
-  //       potassium: 5,
-  //       oxygen: 14,
-  //       carbon: 2,
-  //       light: 0,
-  //     }
-  //   ],
-  // };
   return result;
 };
 
-module.exports = { cardExists, plantIds, adjustments }
+const saveToPermStorage = async () => {
+  const entries = await getTempStorage({})
+  const idBlocs = entries.map(entry => entry.idBloc)
+  idBlocs.forEach(idBloc => {
+    const entriesByBloc = entries.filter(entry => entry.idBloc === idBloc)
+    const moyennes = {
+      temperature: [],
+      moisture: [],
+      nitrogen: [],
+      phosphorus: [],
+      potassium: [],
+      oxygen: [],
+      carbon: [],
+      light: []
+    }
+    entriesByBloc.forEach(entry => {
+      moyennes.temperature.push(entry.mesurse.temperature)
+      moyennes.moisture.push(entry.mesurse.moisture)
+      moyennes.nitrogen.push(entry.mesurse.nitrogen)
+      moyennes.phosphorus.push(entry.mesurse.phosphorus)
+      moyennes.potassium.push(entry.mesurse.potassium)
+      moyennes.oxygen.push(entry.mesurse.oxygen)
+      moyennes.carbon.push(entry.mesurse.carbon)
+      moyennes.light.push(entry.mesurse.light)
+    })
+    for (const key in moyennes) {
+      const result = grubbs.test(moyennes[key])
+      try {
+        if (result[1].dataset) {
+          moyennes[key] = result[1].average
+        }
+      }
+      catch (err) {
+        moyennes[key] = result[0].average
+      }
+    }
+    moyennes.date = new Date()
+
+    const newPermStorEntry = {
+      idBloc,
+      mesures: moyennes
+    }
+    await deleteTempStorage({})
+    await insertPermStorage(newPermStorEntry)
+  })
+}
+
+module.exports = { cardExists, plantIds, adjustments, saveToPermStorage }

@@ -1,7 +1,7 @@
 require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
-const { cardExists, plantIds, adjustments } = require("./adjustments")
+const { cardExists, plantIds, adjustments, saveToPermStorage } = require("./adjustments")
 const {
 	connectDB,
 	cardCRUD: {
@@ -77,10 +77,6 @@ app.use(morgan('combined'))
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
-app.get('/api/test', (req, res) => {
-	res.send('hello world');
-})
-
 app.post('/api/arduino/:arduinoId', (req, res) => {
 	console.log(connectDB)
 	const arduinoId = req.params['arduinoId']
@@ -92,7 +88,7 @@ app.post('/api/arduino/:arduinoId', (req, res) => {
 	}
 	console.log(`arduinoID = ${arduinoId}`)
 	console.log(currentStatus)
-	const output = adjustments(arduinoId, currentStatus)
+	const output = adjustments(currentStatus)
 	res.status(200).json(output)
 })
 
@@ -107,3 +103,7 @@ app.get('/api/arduino/plants/:arduinoId', (req, res) => {
 app.listen(port, () => {
 	console.log(`SmartyCol server is running on port ${port}`)
 })
+
+setInterval(() => {
+	saveToPermStorage()
+}, 24 * 60 * 60 * 1000) // 24 hours - 60 minutes - 60 seconds - 1000 milliseconds
