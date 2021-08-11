@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include "ArduinoJson.h"
+#define ONBOARD_LED  2
 
 typedef struct Plante Plante;
 struct Plante {
@@ -19,12 +20,12 @@ const char* ssid = "Orange-7A78";
 const char* password = "0J8RNB60NNL";
 unsigned long arduinoId = 1111;
 const String ipAdress_DomaineName = "192.168.1.102"; //change this with the ip adress or domaine name of server
-const String measurementsServerName = "http://" + ipAdress_DomaineName + ":5000/api/arduino/" + arduinoId;
-const String plantIdsServerName = "http://" + ipAdress_DomaineName + ":5000/api/arduino/plants/" + arduinoId;
+const String measurementsServerName = "http://" + ipAdress_DomaineName + ":5001/api/arduino/" + arduinoId;
+const String plantIdsServerName = "http://" + ipAdress_DomaineName + ":5001/api/arduino/plants/" + arduinoId;
 Plante plantes[4];
 unsigned long lastTime = 0;
 //15 minutes (900000 milliseconds) between each 2 requests
-const unsigned long timerDelay = 10000; 
+const unsigned long timerDelay = 10*1000; 
 
 void setup() {
   Serial.begin(115200);
@@ -33,7 +34,14 @@ void setup() {
   Serial.println("Connecting");
   while(WiFi.status() != WL_CONNECTED) {
     Serial.println("Failed, retrying ...");
-    delay(500);
+    delay(2000);
+    // blink led once
+    for(int i = 0; i < 1; i++){
+      digitalWrite(ONBOARD_LED,HIGH);
+      delay(200);
+      digitalWrite(ONBOARD_LED,LOW);
+      delay(200);
+    }
   }
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
@@ -41,13 +49,14 @@ void setup() {
 
   // initiate plantsIds (with a GET request)
   String plantsIdsRaw = httpGETplantIds(plantIdsServerName.c_str());
-   StaticJsonDocument<1000> plantsJson;
-   DeserializationError error = deserializeJson(plantsJson, plantsIdsRaw);
-   if (error) {
+  StaticJsonDocument<1000> plantsJson;
+  DeserializationError error = deserializeJson(plantsJson, plantsIdsRaw);
+  if (error) {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
-    return;
-   }
+    sendErrorRequest();
+    blinkLed(2);
+  }
 
   for(int i = 0; i < 4; i++){
      plantes[i].plantId = plantsJson["plants"][i];
@@ -66,7 +75,13 @@ void loop() {
       Serial.println("Connecting");
       while(WiFi.status() != WL_CONNECTED) {
         Serial.println("Failed, retrying ...");
-        delay(500);
+        delay(2000);
+        for(int i = 0; i < 1; i++){
+          digitalWrite(ONBOARD_LED,HIGH);
+          delay(200);
+          digitalWrite(ONBOARD_LED,LOW);
+          delay(200);
+        }
       }
       Serial.println("");
       Serial.print("Connected to WiFi network with IP Address: ");
@@ -75,7 +90,6 @@ void loop() {
     lastTime = millis();
   }
 }
-
 
 String httpGETplantIds(const char* serverName) {
   HTTPClient http;
@@ -96,6 +110,8 @@ String httpGETplantIds(const char* serverName) {
   else {
     Serial.print("Error code: ");
     Serial.println(httpResponseCode);
+    sendErrorRequest();
+    blinkLed(2);
   }
   // Free resources
   http.end();
@@ -109,6 +125,11 @@ void httpPostMeasurments(const char* serverName){
   // Your IP address with path or Domain name with URL path 
   http.begin(serverName);
   http.addHeader("Content-Type", "application/json"); 
+
+  /*
+   * 
+   * 
+  */
   
   //get all measurments
   plantes[0].temperature = 0;
@@ -178,7 +199,8 @@ void httpPostMeasurments(const char* serverName){
   else {
     Serial.print("Error code: ");
     Serial.println(httpResponseCode);
-    return ;
+    sendErrorRequest();
+    blinkLed(3);
   }
   // Free resources
   http.end();
@@ -193,13 +215,15 @@ void httpPostMeasurments(const char* serverName){
   if (error) {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
-    return ;
+    sendErrorRequest();
+    blinkLed(3);
   }
   
   bool success = doc1["success"];
   if(!success){
     Serial.println("something went wrong");
-    return;
+    sendErrorRequest();
+    blinkLed(2);
   }
   int i = 0;
   for (JsonObject elem : doc1["plants"].as<JsonArray>()) {
@@ -216,4 +240,38 @@ void httpPostMeasurments(const char* serverName){
 
   //Act accordingly (apply changes)
   //...
+}
+
+void sendErrorRequest(){
+    HTTPClient http;
+    String errorServerName = "http://" + ipAdress_DomaineName + ":5000/api/arduino/error/" + arduinoId;;
+ 
+    http.begin(errorServerName);
+
+    // Send HTTP GET request
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode>0) {
+      Serial.print("HTTP Response code: ");
+      Serial.println(httpResponseCode);
+    }
+    else {
+      Serial.print("Error code: ");
+      Serial.println(httpResponseCode);
+    }
+    // Free resources
+    http.end();
+}
+
+void blinkLed(int no){
+  int blinkingDelai = timerDelay / (2400 * no);
+  for(int i = 0; i < blinkingDelai; i++){
+    delay(2000);
+    for(int j = 0; j < 3; j++){
+      digitalWrite(ONBOARD_LED,HIGH);
+      delay(200);
+      digitalWrite(ONBOARD_LED,LOW);
+      delay(200);
+    }
+  }
 }
