@@ -1,9 +1,9 @@
 #include <WiFi.h>
-#include <HTTPClient.h>
-#include "ArduinoJson.h"
-#define ONBOARD_LED  2
+#include <HTTPClient.h> //for sending http requests to server
+#include "ArduinoJson.h" //parse body response in json format
+#define ONBOARD_LED  2 //setting different blinking LED patterns for each state
 
-typedef struct Plante Plante;
+typedef struct Plante Plante; // define Plant structure to combine linked info about each plant
 struct Plante {
   long plantId;
   int temperature;
@@ -16,26 +16,38 @@ struct Plante {
   int light;
 };
 
+// wifi ssid
 const char* ssid = "Orange-7A78";
+// wifi password
 const char* password = "0J8RNB60NNL";
+// the id of the arduino card that will execute this code
 unsigned long arduinoId = 1111;
+// ip of the server hosting the backend
 const String ipAdress_DomaineName = "192.168.1.102"; //change this with the ip adress or domaine name of server
+// url for sending measurements (POST requests)
 const String measurementsServerName = "http://" + ipAdress_DomaineName + ":5001/api/arduino/" + arduinoId;
+// url for retreiving plant ids by card (GET request)
 const String plantIdsServerName = "http://" + ipAdress_DomaineName + ":5001/api/arduino/plants/" + arduinoId;
+// array of plants to store each plant's measurements and the changes to apply
 Plante plantes[4];
+// initialize last time when a post request was sent
 unsigned long lastTime = 0;
 //15 minutes (900000 milliseconds) between each 2 requests
-const unsigned long timerDelay = 10*1000; 
+const unsigned long timerDelay = 10*1000; // change for debugging purposes 
 
+// runs once after booting the card
 void setup() {
+  // initialse serial monitor for logging info and debugging
   Serial.begin(115200);
-  
+
+  //connecting to wifi network
   WiFi.begin(ssid, password);
   Serial.println("Connecting");
   while(WiFi.status() != WL_CONNECTED) {
+    // runs in case connection failed
     Serial.println("Failed, retrying ...");
     delay(2000);
-    // blink led once
+    // blink led once to indicate failing to connect to wifi 
     for(int i = 0; i < 1; i++){
       digitalWrite(ONBOARD_LED,HIGH);
       delay(200);
@@ -49,6 +61,7 @@ void setup() {
 
   // initiate plantsIds (with a GET request)
   String plantsIdsRaw = httpGETplantIds(plantIdsServerName.c_str());
+  //parse string response to json decument
   StaticJsonDocument<1000> plantsJson;
   DeserializationError error = deserializeJson(plantsJson, plantsIdsRaw);
   if (error) {
@@ -58,6 +71,7 @@ void setup() {
     blinkLed(2);
   }
 
+  // store results of get request in plants array
   for(int i = 0; i < 4; i++){
      plantes[i].plantId = plantsJson["plants"][i];
   }
@@ -65,17 +79,16 @@ void setup() {
 
 void loop() {
   //Send an HTTP POST request every 15 minutes
-  if ((millis() - lastTime) > timerDelay) {
+  // checks if a periode suerior to timerDelay passed since the last request
+  if ((millis() - lastTime) > timerDelay) {  
     //Check WiFi connection status
-    if(WiFi.status()== WL_CONNECTED){
-      httpPostMeasurments(measurementsServerName.c_str());
-    }
-    else {
+    if(WiFi.status()!= WL_CONNECTED){
       Serial.println("WiFi Disconnected");
       Serial.println("Connecting");
       while(WiFi.status() != WL_CONNECTED) {
         Serial.println("Failed, retrying ...");
         delay(2000);
+        // blink once to indicate failing connection status
         for(int i = 0; i < 1; i++){
           digitalWrite(ONBOARD_LED,HIGH);
           delay(200);
@@ -87,19 +100,30 @@ void loop() {
       Serial.print("Connected to WiFi network with IP Address: ");
       Serial.println(WiFi.localIP());
     }
+    else {
+      // send measurements
+      httpPostMeasurments(measurementsServerName.c_str());
+    }
+    // reset last time of sending request
     lastTime = millis();
   }
 }
 
+// helper functions
 String httpGETplantIds(const char* serverName) {
+  // send GET request to retreive ids of plants associated to this card and return result as string
+  
+  // initialise http client object
   HTTPClient http;
 
-  // Your IP address with path or Domain name with URL path 
+  // set url of request
   http.begin(plantIdsServerName);
 
+  // send get request and retrieve response code
   // Send HTTP POST request
   int httpResponseCode = http.GET();
 
+  // get response
   String payload;
 
   if (httpResponseCode>0) {
@@ -116,22 +140,21 @@ String httpGETplantIds(const char* serverName) {
   // Free resources
   http.end();
 
+  // return response as a string
   return payload;
 }
 
 void httpPostMeasurments(const char* serverName){
+  // sent measurements in a POST request
+  // initialize http client object
   HTTPClient http;
 
-  // Your IP address with path or Domain name with URL path 
+  // set request url
   http.begin(serverName);
+  // set request headers
   http.addHeader("Content-Type", "application/json"); 
-
-  /*
-   * 
-   * 
-  */
   
-  //get all measurments
+  //make all measurments
   plantes[0].temperature = 0;
   plantes[0].moisture = 0;
   plantes[0].nitrogen = 0;
@@ -188,9 +211,10 @@ void httpPostMeasurments(const char* serverName){
   serializeJson(doc, body);
   Serial.println(body);
   String response;
-  // Send HTTP POST request
+  // assign body to HTTP POST request, send it, and retrieve response code
   int httpResponseCode = http.POST(body);
 
+  // retrieve response as string
   if (httpResponseCode>0) {
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
@@ -206,8 +230,8 @@ void httpPostMeasurments(const char* serverName){
   http.end();
 
   Serial.println(response);
-
-  //Store response in array of plants
+ 
+  //parse response as json document and store it in the plants array
   StaticJsonDocument<1024> doc1;
   
   DeserializationError error = deserializeJson(doc1, response);
@@ -242,7 +266,9 @@ void httpPostMeasurments(const char* serverName){
   //...
 }
 
+
 void sendErrorRequest(){
+    // send GET request to inform the server of a potential parsing error
     HTTPClient http;
     String errorServerName = "http://" + ipAdress_DomaineName + ":5000/api/arduino/error/" + arduinoId;;
  
@@ -264,6 +290,7 @@ void sendErrorRequest(){
 }
 
 void blinkLed(int no){
+  // helper function for blinking blue LED of esp32 module in a certain pattern
   int blinkingDelai = timerDelay / (2400 * no);
   for(int i = 0; i < blinkingDelai; i++){
     delay(2000);
